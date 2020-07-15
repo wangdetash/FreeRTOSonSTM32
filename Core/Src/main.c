@@ -53,6 +53,7 @@ UART_HandleTypeDef huart2;
 
 osThreadId Sender1Handle;
 osThreadId RecieverHandle;
+osThreadId Sender2Handle;
 osMessageQId Queue1Handle;
 /* USER CODE BEGIN PV */
 
@@ -62,8 +63,9 @@ osMessageQId Queue1Handle;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
-void StartSender(void const * argument);
+void StartSender1(void const * argument);
 void StartReciever(void const * argument);
+void StartSender2(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -130,12 +132,16 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of Sender1 */
-  osThreadDef(Sender1, StartSender, osPriorityNormal, 0, 128);
+  osThreadDef(Sender1, StartSender1, osPriorityNormal, 0, 128);
   Sender1Handle = osThreadCreate(osThread(Sender1), NULL);
 
   /* definition and creation of Reciever */
-  osThreadDef(Reciever, StartReciever, osPriorityIdle, 0, 128);
+  osThreadDef(Reciever, StartReciever, osPriorityNormal, 0, 128);
   RecieverHandle = osThreadCreate(osThread(Reciever), NULL);
+
+  /* definition and creation of Sender2 */
+  osThreadDef(Sender2, StartSender2, osPriorityNormal, 0, 128);
+  Sender2Handle = osThreadCreate(osThread(Sender2), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -277,22 +283,23 @@ PUTCHAR_PROTOTYPE
 }
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_StartSender */
+/* USER CODE BEGIN Header_StartSender1 */
 /**
   * @brief  Function implementing the Sender1 thread.
   * @param  argument: Not used 
   * @retval None
   */
-/* USER CODE END Header_StartSender */
-void StartSender(void const * argument)
+/* USER CODE END Header_StartSender1 */
+void StartSender1(void const * argument)
 {
   /* USER CODE BEGIN 5 */
 	printf("Sender1 Task\r\n");
   /* Infinite loop */
   for(;;)
   {
-	printf("Send To Q\r\n");
+	printf("S1\r\n");
 	osMessagePut(Queue1Handle,10,200);
+	osDelay(2000);
   }
   /* USER CODE END 5 */ 
 }
@@ -313,9 +320,30 @@ void StartReciever(void const * argument)
   for(;;)
   {
     retValue = osMessageGet(Queue1Handle,4000);
-    printf("%lu\n\r",retValue.value.v);
+    printf("%lu\r\n",retValue.value.v);
   }
   /* USER CODE END StartReciever */
+}
+
+/* USER CODE BEGIN Header_StartSender2 */
+/**
+* @brief Function implementing the Sender2 thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartSender2 */
+void StartSender2(void const * argument)
+{
+  /* USER CODE BEGIN StartSender2 */
+	printf("Sender2 Task\r\n");
+  /* Infinite loop */
+  for(;;)
+  {
+	  printf("S2\r\n");
+	  osMessagePut(Queue1Handle,20,200);
+	  osDelay(2000);
+  }
+  /* USER CODE END StartSender2 */
 }
 
 /**
