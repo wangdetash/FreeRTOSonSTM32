@@ -291,7 +291,8 @@ void StartSender(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	printf("Send To Q\r\n");
+	osMessagePut(Queue1Handle,10,200);
   }
   /* USER CODE END 5 */ 
 }
@@ -306,11 +307,13 @@ void StartSender(void const * argument)
 void StartReciever(void const * argument)
 {
   /* USER CODE BEGIN StartReciever */
+	osEvent retValue;
 	printf("Reciever Task\r\n");
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    retValue = osMessageGet(Queue1Handle,4000);
+    printf("%lu\n\r",retValue.value.v);
   }
   /* USER CODE END StartReciever */
 }
