@@ -136,7 +136,7 @@ int main(void)
   Sender1Handle = osThreadCreate(osThread(Sender1), NULL);
 
   /* definition and creation of Reciever */
-  osThreadDef(Reciever, StartReciever, osPriorityNormal, 0, 128);
+  osThreadDef(Reciever, StartReciever, osPriorityAboveNormal, 0, 128);
   RecieverHandle = osThreadCreate(osThread(Reciever), NULL);
 
   /* definition and creation of Sender2 */
