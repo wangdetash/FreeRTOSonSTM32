@@ -29,7 +29,11 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+typedef struct
+{
+	uint16_t Value;
+	uint8_t Source;
+}Data;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -56,7 +60,8 @@ osThreadId RecieverHandle;
 osThreadId Sender2Handle;
 osMessageQId Queue1Handle;
 /* USER CODE BEGIN PV */
-
+Data DataToSend1 = {2018,1};
+Data DataToSend2 = {2019,2};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -123,7 +128,7 @@ int main(void)
 
   /* Create the queue(s) */
   /* definition and creation of Queue1 */
-  osMessageQDef(Queue1, 256, uint8_t);
+  osMessageQDef(Queue1, 16, Data);
   Queue1Handle = osMessageCreate(osMessageQ(Queue1), NULL);
 
   /* USER CODE BEGIN RTOS_QUEUES */
@@ -298,7 +303,7 @@ void StartSender1(void const * argument)
   for(;;)
   {
 	printf("S1\r\n");
-	osMessagePut(Queue1Handle,10,200);
+	osMessagePut(Queue1Handle,(uint32_t)&DataToSend1,200);
 	osDelay(2000);
   }
   /* USER CODE END 5 */ 
@@ -320,7 +325,15 @@ void StartReciever(void const * argument)
   for(;;)
   {
     retValue = osMessageGet(Queue1Handle,4000);
-    printf("%lu\r\n",retValue.value.v);
+    if(((Data *)retValue.value.p)->Source == 1)
+    {
+    	printf("Data from Sender 1 :%lu\r\n",((Data *)retValue.value.p)->Value);
+    }
+    else if(((Data *)retValue.value.p)->Source == 2)
+    {
+    	printf("Data from Sender 2 :%lu\r\n",((Data *)retValue.value.p)->Value);
+    }
+
   }
   /* USER CODE END StartReciever */
 }
@@ -340,7 +353,7 @@ void StartSender2(void const * argument)
   for(;;)
   {
 	  printf("S2\r\n");
-	  osMessagePut(Queue1Handle,20,200);
+	  osMessagePut(Queue1Handle,(uint32_t)&DataToSend2,200);
 	  osDelay(2000);
   }
   /* USER CODE END StartSender2 */
