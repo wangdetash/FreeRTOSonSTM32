@@ -45,6 +45,11 @@ typedef struct
 #else
   #define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
 #endif /* __GNUC__ */
+
+/**
+ * defined signal
+ */
+#define SIGNAL_BUTTON_PRESS 1
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -55,10 +60,7 @@ typedef struct
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
 
-osThreadId Sender1Handle;
-osThreadId RecieverHandle;
-osThreadId Sender2Handle;
-osMessageQId Queue1Handle;
+osThreadId LedBlinkHandle;
 /* USER CODE BEGIN PV */
 Data DataToSend1 = {2018,1};
 Data DataToSend2 = {2019,2};
@@ -68,9 +70,7 @@ Data DataToSend2 = {2019,2};
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
-void StartSender1(void const * argument);
-void StartReciever(void const * argument);
-void StartSender2(void const * argument);
+void StartLedBlink(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -126,27 +126,14 @@ int main(void)
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
-  /* Create the queue(s) */
-  /* definition and creation of Queue1 */
-  osMessageQDef(Queue1, 16, Data);
-  Queue1Handle = osMessageCreate(osMessageQ(Queue1), NULL);
-
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* definition and creation of Sender1 */
-  osThreadDef(Sender1, StartSender1, osPriorityNormal, 0, 128);
-  Sender1Handle = osThreadCreate(osThread(Sender1), NULL);
-
-  /* definition and creation of Reciever */
-  osThreadDef(Reciever, StartReciever, osPriorityAboveNormal, 0, 128);
-  RecieverHandle = osThreadCreate(osThread(Reciever), NULL);
-
-  /* definition and creation of Sender2 */
-  osThreadDef(Sender2, StartSender2, osPriorityNormal, 0, 128);
-  Sender2Handle = osThreadCreate(osThread(Sender2), NULL);
+  /* definition and creation of LedBlink */
+  osThreadDef(LedBlink, StartLedBlink, osPriorityNormal, 0, 128);
+  LedBlinkHandle = osThreadCreate(osThread(LedBlink), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -275,6 +262,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
 }
 
 /* USER CODE BEGIN 4 */
@@ -286,77 +277,31 @@ PUTCHAR_PROTOTYPE
 
   return ch;
 }
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	osSignalSet(LedBlinkHandle, SIGNAL_BUTTON_PRESS);
+}
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_StartSender1 */
+/* USER CODE BEGIN Header_StartLedBlink */
 /**
-  * @brief  Function implementing the Sender1 thread.
+  * @brief  Function implementing the LedBlink thread.
   * @param  argument: Not used 
   * @retval None
   */
-/* USER CODE END Header_StartSender1 */
-void StartSender1(void const * argument)
+/* USER CODE END Header_StartLedBlink */
+void StartLedBlink(void const * argument)
 {
   /* USER CODE BEGIN 5 */
-	printf("Sender1 Task\r\n");
+
   /* Infinite loop */
   for(;;)
   {
-	printf("S1\r\n");
-	osMessagePut(Queue1Handle,(uint32_t)&DataToSend1,200);
-	osDelay(2000);
+	osSignalWait(SIGNAL_BUTTON_PRESS,osWaitForever);
+	HAL_GPIO_TogglePin(LD2_GPIO_Port,LD2_Pin);
   }
   /* USER CODE END 5 */ 
-}
-
-/* USER CODE BEGIN Header_StartReciever */
-/**
-* @brief Function implementing the Reciever thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartReciever */
-void StartReciever(void const * argument)
-{
-  /* USER CODE BEGIN StartReciever */
-	osEvent retValue;
-	printf("Reciever Task\r\n");
-  /* Infinite loop */
-  for(;;)
-  {
-    retValue = osMessageGet(Queue1Handle,4000);
-    if(((Data *)retValue.value.p)->Source == 1)
-    {
-    	printf("Data from Sender 1 :%lu\r\n",((Data *)retValue.value.p)->Value);
-    }
-    else if(((Data *)retValue.value.p)->Source == 2)
-    {
-    	printf("Data from Sender 2 :%lu\r\n",((Data *)retValue.value.p)->Value);
-    }
-
-  }
-  /* USER CODE END StartReciever */
-}
-
-/* USER CODE BEGIN Header_StartSender2 */
-/**
-* @brief Function implementing the Sender2 thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartSender2 */
-void StartSender2(void const * argument)
-{
-  /* USER CODE BEGIN StartSender2 */
-	printf("Sender2 Task\r\n");
-  /* Infinite loop */
-  for(;;)
-  {
-	  printf("S2\r\n");
-	  osMessagePut(Queue1Handle,(uint32_t)&DataToSend2,200);
-	  osDelay(2000);
-  }
-  /* USER CODE END StartSender2 */
 }
 
 /**
