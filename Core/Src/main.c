@@ -29,11 +29,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-typedef struct
-{
-	uint16_t Value;
-	uint8_t Source;
-}Data;
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -60,17 +56,18 @@ typedef struct
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
 
-osThreadId LedBlinkHandle;
+osThreadId TaskHandle;
+osTimerId myTimer01Handle;
 /* USER CODE BEGIN PV */
-Data DataToSend1 = {2018,1};
-Data DataToSend2 = {2019,2};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
-void StartLedBlink(void const * argument);
+void StartTask(void const * argument);
+void Callback01(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -122,6 +119,11 @@ int main(void)
   /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
 
+  /* Create the timer(s) */
+  /* definition and creation of myTimer01 */
+  osTimerDef(myTimer01, Callback01);
+  myTimer01Handle = osTimerCreate(osTimer(myTimer01), osTimerPeriodic, NULL);
+
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
@@ -131,9 +133,9 @@ int main(void)
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* definition and creation of LedBlink */
-  osThreadDef(LedBlink, StartLedBlink, osPriorityNormal, 0, 128);
-  LedBlinkHandle = osThreadCreate(osThread(LedBlink), NULL);
+  /* definition and creation of Task */
+  osThreadDef(Task, StartTask, osPriorityNormal, 0, 128);
+  TaskHandle = osThreadCreate(osThread(Task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -280,28 +282,36 @@ PUTCHAR_PROTOTYPE
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	osSignalSet(LedBlinkHandle, SIGNAL_BUTTON_PRESS);
+	osDelay(1);
 }
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_StartLedBlink */
+/* USER CODE BEGIN Header_StartTask */
 /**
-  * @brief  Function implementing the LedBlink thread.
+  * @brief  Function implementing the Task thread.
   * @param  argument: Not used 
   * @retval None
   */
-/* USER CODE END Header_StartLedBlink */
-void StartLedBlink(void const * argument)
+/* USER CODE END Header_StartTask */
+void StartTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
-
+	osTimerStart(myTimer01Handle,1000);
   /* Infinite loop */
   for(;;)
   {
-	osSignalWait(SIGNAL_BUTTON_PRESS,osWaitForever);
-	HAL_GPIO_TogglePin(LD2_GPIO_Port,LD2_Pin);
+	osDelay(1000);
+	printf("Task Execution\n\r");
   }
   /* USER CODE END 5 */ 
+}
+
+/* Callback01 function */
+void Callback01(void const * argument)
+{
+  /* USER CODE BEGIN Callback01 */
+  HAL_GPIO_TogglePin(LD2_GPIO_Port,LD2_Pin);
+  /* USER CODE END Callback01 */
 }
 
 /**
